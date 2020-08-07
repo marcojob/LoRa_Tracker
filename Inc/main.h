@@ -64,10 +64,13 @@ void Error_Handler(void);
 #define DIO4_GPIO_Port GPIOB
 #define DIO0_Pin GPIO_PIN_14
 #define DIO0_GPIO_Port GPIOB
+#define DIO0_EXTI_IRQn EXTI15_10_IRQn
 #define DIO1_Pin GPIO_PIN_15
 #define DIO1_GPIO_Port GPIOB
+#define DIO1_EXTI_IRQn EXTI15_10_IRQn
 #define DIO2_Pin GPIO_PIN_8
 #define DIO2_GPIO_Port GPIOA
+#define DIO2_EXTI_IRQn EXTI9_5_IRQn
 #define DIO5_Pin GPIO_PIN_11
 #define DIO5_GPIO_Port GPIOA
 #define RESET_Pin GPIO_PIN_12
