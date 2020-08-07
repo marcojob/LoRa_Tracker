@@ -41,12 +41,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-SPI_HandleTypeDef hspi1;
-
-TIM_HandleTypeDef htim4;
-
-UART_HandleTypeDef huart1;
-UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 
