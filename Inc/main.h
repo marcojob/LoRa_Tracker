@@ -31,13 +31,13 @@ extern "C" {
 #include "stm32f1xx_hal.h"
 
 /* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim4;
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart3;
-/* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
 
@@ -64,6 +64,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define NSS_Pin GPIO_PIN_4
+#define NSS_GPIO_Port GPIOA
 #define DIO3_Pin GPIO_PIN_12
 #define DIO3_GPIO_Port GPIOB
 #define DIO4_Pin GPIO_PIN_13
@@ -83,8 +85,6 @@ void Error_Handler(void);
 #define RESET_GPIO_Port GPIOA
 #define LED_Pin GPIO_PIN_15
 #define LED_GPIO_Port GPIOA
-#define SPI1_NSS_Pin GPIO_PIN_4
-#define SPI1_NSS_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

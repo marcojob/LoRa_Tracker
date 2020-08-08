@@ -67,7 +67,7 @@ void hal_pin_rxtx (u1_t val) {
 
 // set radio NSS pin to given value
 void hal_pin_nss (u1_t val) {
-    HAL_GPIO_WritePin(SPI1_NSS_Port,SPI1_NSS_Pin,val);
+    HAL_GPIO_WritePin(NSS_GPIO_Port,NSS_Pin,val);
 }
 
 // set radio RST pin to given value (or keep floating!)
