@@ -86,6 +86,7 @@ void debug_str (const char* str) {
     while(*str) {
         debug_char(*str++);
     }
+    debug_char('\n');
 }
 
 void debug_val (const char* label, u4_t val) {
