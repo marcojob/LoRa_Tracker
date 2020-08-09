@@ -85,6 +85,8 @@ void Error_Handler(void);
 #define RESET_GPIO_Port GPIOA
 #define LED_Pin GPIO_PIN_15
 #define LED_GPIO_Port GPIOA
+#define SENSE_Pin GPIO_PIN_3
+#define SENSE_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

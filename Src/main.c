@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lmic.h"
+#include "config.h"
 #include "debug.h"
 /* USER CODE END Includes */
 
@@ -44,13 +45,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-// application router ID (LSBF)  < ------- IMPORTANT
-static const u1_t APPEUI[8]  = { 0xCA, 0xAF, 0x00, 0xD0, 0x7E, 0xD5, 0xB3, 0x70 };
-// unique device ID (LSBF)       < ------- IMPORTANT
-static const u1_t DEVEUI[8]  = { 0x66, 0x55, 0x44, 0x33, 0x02, 0x1B, 0x01, 0x26 };
-
-// device-specific AES key (derived from device EUI)
-static const u1_t DEVKEY[16] = { 0x29, 0x2D, 0xD9, 0xB3, 0xF2, 0xDA, 0x4C, 0x59, 0x1D, 0xCE, 0x06, 0x0F, 0x1B, 0x56, 0x6F, 0xF3 };
 
 /* USER CODE END PV */
 
@@ -84,29 +78,19 @@ void os_getDevKey (u1_t* buf) {
 }
 
 void initsensor(){
-    static cnt = 0;
-    for (size_t i = 0; i < 10; i++) {
-        HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-        HAL_Delay(1000);
-
-        cnt++;
-        HAL_UART_Transmit(&huart1, &cnt, sizeof(cnt), HAL_MAX_DELAY);
-    }
+    //
 }
 
 void initfunc (osjob_t* j) {
-    // intialize sensor hardware
-    initsensor();
-    // reset MAC state
     LMIC_reset();
-    // start joining
+
     LMIC_startJoining();
-    // init done - onEvent() callback will be invoked...
 }
 
-u2_t readsensor(){
-    u2_t value = 0xDF;    /// read from evrything ...make your own sensor
-    return value;
+uint8_t readsensor(){
+    static uint8_t val = 0;
+    val++;
+    return val;
 }
 
 static osjob_t reportjob;
@@ -114,14 +98,13 @@ static osjob_t reportjob;
 // report sensor value every minute
 static void reportfunc (osjob_t* j) {
     // read sensor
-    u2_t val = readsensor();
+    uint8_t val = readsensor();
     debug_val("val = ", val);
     // prepare and schedule data for transmission
-    LMIC.frame[0] = val << 8;
-    LMIC.frame[1] = val;
-    LMIC_setTxData2(1, LMIC.frame, 2, 0); // (port 1, 2 bytes, unconfirmed)
+    LMIC.frame[0] = val;
+    LMIC_setTxData2(1, LMIC.frame, 1, 0); // (port 1, 1 bytes, unconfirmed)
     // reschedule job in 60 seconds
-    os_setTimedCallback(j, os_getTime()+sec2osticks(10), reportfunc);
+    os_setTimedCallback(j, os_getTime()+sec2osticks(60), reportfunc);
 }
 
 
@@ -133,66 +116,67 @@ void onEvent (ev_t ev) {
     debug_event(ev);
 
     switch(ev) {
-
-      // network joined, session established
-      case EV_JOINING:
-          debug_str("try joining\r\n");
-          break;
-      case EV_JOINED:
-          debug_led(1);
-          // kick-off periodic sensor job
-          reportfunc(&reportjob);
-          break;
-      case EV_JOIN_FAILED:
-          debug_str("join failed\r\n");
-          break;
-      case EV_SCAN_TIMEOUT:
-          debug_str("EV_SCAN_TIMEOUT\r\n");
-          break;
-      case EV_BEACON_FOUND:
-          debug_str("EV_BEACON_FOUND\r\n");
-          break;
-      case EV_BEACON_MISSED:
-          debug_str("EV_BEACON_MISSED\r\n");
-          break;
-      case EV_BEACON_TRACKED:
-          debug_str("EV_BEACON_TRACKED\r\n");
-          break;
-      case EV_RFU1:
-          debug_str("EV_RFU1\r\n");
-          break;
-      case EV_REJOIN_FAILED:
-          debug_str("EV_REJOIN_FAILED\r\n");
-          break;
-      case EV_TXCOMPLETE:
-          debug_str("EV_TXCOMPLETE (includes waiting for RX windows)\r\n");
-          if (LMIC.txrxFlags & TXRX_ACK)
-              debug_str("Received ack\r\n");
-          if (LMIC.dataLen) {
-              debug_str("Received ");
-              debug_str(LMIC.dataLen);
-              debug_str(" bytes of payload\r\n");
-          }
-          break;
-      case EV_LOST_TSYNC:
-          debug_str("EV_LOST_TSYNC\r\n");
-          break;
-      case EV_RESET:
-          debug_str("EV_RESET\r\n");
-          break;
-      case EV_RXCOMPLETE:
-          // data received in ping slot
-          debug_str("EV_RXCOMPLETE\r\n");
-          break;
-      case EV_LINK_DEAD:
-          debug_str("EV_LINK_DEAD\r\n");
-          break;
-      case EV_LINK_ALIVE:
-          debug_str("EV_LINK_ALIVE\r\n");
-          break;
-      default:
-           debug_str("Unknown event\r\n");
-          break;
+        // network joined, session established
+        case EV_JOINING:
+            debug_str("try joining\r\n");
+            break;
+        case EV_JOINED:
+            debug_led(1);
+            // kick-off periodic sensor job
+            reportfunc(&reportjob);
+            break;
+        case EV_JOIN_FAILED:
+            debug_str("join failed\r\n");
+            break;
+        case EV_SCAN_TIMEOUT:
+            debug_str("EV_SCAN_TIMEOUT\r\n");
+            break;
+        case EV_BEACON_FOUND:
+            debug_str("EV_BEACON_FOUND\r\n");
+            break;
+        case EV_BEACON_MISSED:
+            debug_str("EV_BEACON_MISSED\r\n");
+            break;
+        case EV_BEACON_TRACKED:
+            debug_str("EV_BEACON_TRACKED\r\n");
+            break;
+        case EV_RFU1:
+            debug_str("EV_RFU1\r\n");
+            break;
+        case EV_REJOIN_FAILED:
+            debug_str("EV_REJOIN_FAILED\r\n");
+            break;
+        case EV_TXCOMPLETE:
+            debug_str("EV_TXCOMPLETE (includes waiting for RX windows)\r\n");
+            if (LMIC.txrxFlags & TXRX_ACK)
+                debug_str("Received ack\r\n");
+            if (LMIC.dataLen) {
+                debug_str("Received ");
+                debug_str(LMIC.dataLen);
+                debug_str(" bytes of payload\r\n");
+            }
+            break;
+        case EV_LOST_TSYNC:
+            debug_str("EV_LOST_TSYNC\r\n");
+            break;
+        case EV_RESET:
+            debug_str("EV_RESET\r\n");
+            break;
+        case EV_RXCOMPLETE:
+            // data received in ping slot
+            debug_str("EV_RXCOMPLETE\r\n");
+            break;
+        case EV_LINK_DEAD:
+            debug_str("EV_LINK_DEAD\r\n");
+            break;
+        case EV_LINK_ALIVE:
+            debug_str("EV_LINK_ALIVE\r\n");
+            break;
+        default:
+            debug_str("Unknown event: ");
+            debug_str((char)ev);
+            debug_str("\r\n");
+            break;
     }
 }
 
@@ -495,10 +479,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(DIO5_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB3 */
-  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  /*Configure GPIO pin : SENSE_Pin */
+  GPIO_InitStruct.Pin = SENSE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(SENSE_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 3, 0);

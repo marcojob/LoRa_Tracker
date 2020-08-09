@@ -56,3 +56,6 @@ build
 
 # CubeMX files
 *.mxproject
+
+# Configuration file
+Conf/config.h
