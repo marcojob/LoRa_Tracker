@@ -64,6 +64,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define SENSE_FIX_Pin GPIO_PIN_0
+#define SENSE_FIX_GPIO_Port GPIOA
 #define NSS_Pin GPIO_PIN_4
 #define NSS_GPIO_Port GPIOA
 #define DIO3_Pin GPIO_PIN_12
