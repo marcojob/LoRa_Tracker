@@ -59,3 +59,7 @@ build
 
 # Configuration file
 Conf/config.h
+utils/backend/config.py
+
+# Python
+__pycache__
