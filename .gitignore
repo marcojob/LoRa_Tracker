@@ -57,9 +57,10 @@ build
 # CubeMX files
 *.mxproject
 
-# Configuration file
+# Configuration files
 Conf/config.h
 utils/backend/config.py
+utils/backend/ids.json
 
 # Python
 __pycache__
