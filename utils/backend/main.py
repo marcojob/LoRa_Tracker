@@ -28,12 +28,14 @@ class Telegram_Backend():
             with open(CONFIG_JSON_FILE, 'r') as file:
                 self.config = json.load(file)
         else:
-            logger.error("Config file not found, created empty config. Fill it.")
+            logger.error(
+                "Config file not found, created empty config. Fill it.")
             with open(CONFIG_JSON_FILE, 'w') as file:
                 json.dump(self.config, file)
             exit()
 
-        id_template = {"chat_id": None, "msg_id": None, "tracker_id": None}
+        id_template = {"chat_id": None, "msg_id": None,
+                       "bat_id": None, "tracker_id": None}
         chat_ids = {u: id_template for u in self.config["users"]}
 
         # Load chat ids
@@ -86,22 +88,35 @@ class Telegram_Backend():
         # Extract user id and username
         chat_id = update.message.chat.id
         username = update.message.chat.username
+        msg = update.message.text.split(" ")
 
-        if username in self.config["users"]:
-            self.chat_ids[username]["chat_id"] = chat_id
-            self.chat_ids[username]["msg_id"] = None
-
-            # Dump chat ids
-            with open(IDS_JSON_FILE, 'w') as file:
-                json.dump(self.chat_ids, file)
-
-            # Success message
-            update.message.reply_text(
-                'Started LoRa_Tracker application for user {}'.format(username))
-        else:
-            # Failure message
+        # User not allowed
+        if not username in self.config["users"]:
             update.message.reply_text(
                 'Unknown user, please contact maintainer')
+            return
+
+        if not len(msg) == 2:
+            update.message.reply_text(
+                'Please specify your tracker ID with /start <ID>')
+            return
+
+        # Tracker ID
+        tracker_id = msg[1]
+
+        # Get ids
+        self.chat_ids[username]["chat_id"] = chat_id
+        self.chat_ids[username]["msg_id"] = None
+        self.chat_ids[username]["bat_id"] = None
+        self.chat_ids[username]["tracker_id"] = tracker_id
+
+        # Dump chat ids
+        with open(IDS_JSON_FILE, 'w') as file:
+            json.dump(self.chat_ids, file)
+
+        # Success message
+        update.message.reply_text(
+            'Started LoRa_Tracker application for user {} with tracker ID {}'.format(username, tracker_id))
 
     def add_user(self, update, context):
         """Add a new user"""
@@ -167,7 +182,7 @@ class Telegram_Backend():
 
     def send_message(self, username, msg):
         """ Send a message to given user"""
-        self.bot.sendMessage(self.chat_ids[username],"test")
+        self.bot.sendMessage(self.chat_ids[username], "test")
 
     def send_live_location(self, username, lat, lon):
         """ Send a live gps position to given user"""
@@ -181,7 +196,8 @@ class Telegram_Backend():
         # If there is already an active live location we just edit it
         if not msg_id is None:
             try:
-                ret = self.bot.editMessageLiveLocation(chat_id, msg_id, latitude=lat, longitude=lon, disable_notification=True)
+                ret = self.bot.editMessageLiveLocation(
+                    chat_id, msg_id, latitude=lat, longitude=lon, disable_notification=True)
             except Exception as e:
                 logger.warning('Could not edit message: {}'.format(e))
                 ret = True
@@ -198,8 +214,9 @@ class Telegram_Backend():
 
         # Either live location is not valid or we did not have one active
         logger.info('Could not edit live location for {}'.format(username))
-        m = self.bot.send_location(chat_id, latitude=lat, longitude=lon, live_period=MAX_LIVE_PERIOD, disable_notification=True)
-        print(m)
+        m = self.bot.send_location(chat_id, latitude=lat, longitude=lon,
+                                   live_period=MAX_LIVE_PERIOD, disable_notification=True)
+
         self.chat_ids[username]["msg_id"] = m.message_id
 
         # Dump chat ids
@@ -212,13 +229,15 @@ def main():
     tb = Telegram_Backend()
 
     # Temporary fixed location for testing
-    lat = 47.399978
-    lon = 8.546835
+    lat = {"0": 47.399978, "1": 40.749806}
+    lon = {"0": 8.546835, "1": -73.987806}
     while(True):
+        user = tb.config["users"][0]
+        id_ = tb.chat_ids[user]["tracker_id"]
         sleep(3)
-        lat += 0.0001
-        lon += 0.0001
-        tb.send_live_location(tb.config["users"][0], lat, lon)
+        lat[id_] += 0.0001
+        lon[id_] += 0.0001
+        tb.send_live_location(user, lat[id_], lon[id_])
 
 
 if __name__ == '__main__':
