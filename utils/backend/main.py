@@ -4,6 +4,7 @@ import threading
 import os
 
 from time import sleep
+from random import random
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
@@ -22,6 +23,7 @@ class Telegram_Backend():
     def __init__(self):
         # Variables
         self.config = {"token": None, "users": []}
+        self.last_soc = 0
 
         # Load config
         if os.path.isfile(CONFIG_JSON_FILE):
@@ -180,10 +182,6 @@ class Telegram_Backend():
                 with open(IDS_JSON_FILE, 'w') as file:
                     json.dump(self.chat_ids, file)
 
-    def send_message(self, username, msg):
-        """ Send a message to given user"""
-        self.bot.sendMessage(self.chat_ids[username], "test")
-
     def send_live_location(self, username, lat, lon):
         """ Send a live gps position to given user"""
         chat_id = self.chat_ids[username]["chat_id"]
@@ -223,6 +221,58 @@ class Telegram_Backend():
         with open(IDS_JSON_FILE, 'w') as file:
             json.dump(self.chat_ids, file)
 
+    def send_soc(self, username, soc):
+        """Send SOC message"""
+        chat_id = self.chat_ids[username]["chat_id"]
+        soc_msg = 'Bat: {}%'.format(soc)
+
+        if chat_id is None:
+            return
+
+        bat_id = self.chat_ids[username]["bat_id"]
+
+        # If there is already an active live location we just edit it
+        if not bat_id is None:
+            # If SOC is same we do not edit
+            if soc == self.last_soc:
+                return
+
+            try:
+                ret = self.bot.edit_message_text(
+                    soc_msg, chat_id, bat_id)
+            except Exception as e:
+                logger.warning('Could not edit message: {}'.format(e))
+                ret = True
+
+            # Update last SOC
+            self.last_soc = soc
+
+            # Returns true on failure
+            if not ret is True:
+                return
+
+            # Delete the previous msg, in order to keep chat clean
+            try:
+                self.bot.delete_message(chat_id, bat_id)
+            except Exception as e:
+                logger.warning('Could not delete message: {}'.format(e))
+
+        # Either live location is not valid or we did not have one active
+        logger.info('Could not edit battery message for {}'.format(username))
+        m = self.bot.send_message(self.chat_ids[username]["chat_id"], soc_msg)
+
+        # Update last SOC
+        self.last_soc = soc
+
+        self.chat_ids[username]["bat_id"] = m.message_id
+
+        # Dump chat ids
+        with open(IDS_JSON_FILE, 'w') as file:
+            json.dump(self.chat_ids, file)
+
+    def handle_buffer(buf):
+        pass
+
 
 def main():
     # Backend class object,start
@@ -238,6 +288,7 @@ def main():
         lat[id_] += 0.0001
         lon[id_] += 0.0001
         tb.send_live_location(user, lat[id_], lon[id_])
+        tb.send_soc(user, int(100.0*random()))
 
 
 if __name__ == '__main__':

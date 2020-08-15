@@ -21,3 +21,6 @@ This device aims to be a GPS tracker which connects over LoRa to the [Things Net
 - Implement persistent memory writing for TTN keys
 - Add Gerber files to repository
 - Add STL files to repository
+
+## Known issues
+- ADC pin for battery voltage measurements wired wrong
