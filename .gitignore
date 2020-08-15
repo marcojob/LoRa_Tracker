@@ -59,7 +59,7 @@ build
 
 # Configuration files
 Conf/config.h
-utils/backend/config.py
+utils/backend/config.json
 utils/backend/ids.json
 
 # Python
