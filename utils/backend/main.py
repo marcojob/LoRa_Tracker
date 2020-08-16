@@ -36,9 +36,11 @@ class Telegram_Backend():
                 json.dump(self.config, file)
             exit()
 
-        id_template = {"chat_id": None, "msg_id": None,
+        # Template for all chat IDs
+        self.id_template = {"chat_id": None, "msg_id": None,
                        "bat_id": None, "tracker_id": None}
-        chat_ids = {u: id_template for u in self.config["users"]}
+
+        chat_ids = {u: self.id_template for u in self.config["users"]}
 
         # Load chat ids
         if os.path.isfile(IDS_JSON_FILE):
@@ -48,7 +50,7 @@ class Telegram_Backend():
                 # Check if we added any users
                 for user in chat_ids.keys():
                     if not user in self.chat_ids.keys():
-                        self.chat_ids[user] = id_template
+                        self.chat_ids[user] = self.id_template
                         logger.info('Added user {}'.format(user))
 
                 # Check if we removed any users
@@ -142,6 +144,7 @@ class Telegram_Backend():
         new_user = command_msg[0]
         if not new_user in self.config["users"]:
             self.config["users"].append(new_user)
+            self.chat_ids[new_user] = self.id_template
             logger.info("Added user {}".format(new_user))
 
             # Write it
@@ -282,13 +285,13 @@ def main():
     lat = {"0": 47.399978, "1": 40.749806}
     lon = {"0": 8.546835, "1": -73.987806}
     while(True):
-        user = tb.config["users"][0]
-        id_ = tb.chat_ids[user]["tracker_id"]
+        for user in tb.config["users"]:
+            id_ = tb.chat_ids[user]["tracker_id"]
+            lat[id_] += 0.0001
+            lon[id_] += 0.0001
+            tb.send_live_location(user, lat[id_], lon[id_])
+            tb.send_soc(user, int(100.0*random()))
         sleep(3)
-        lat[id_] += 0.0001
-        lon[id_] += 0.0001
-        tb.send_live_location(user, lat[id_], lon[id_])
-        tb.send_soc(user, int(100.0*random()))
 
 
 if __name__ == '__main__':
