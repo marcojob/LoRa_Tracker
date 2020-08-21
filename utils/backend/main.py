@@ -2,6 +2,8 @@ import logging
 import json
 import threading
 import os
+import paho.mqtt.client as mqtt
+import base64
 
 from time import sleep
 from random import random
@@ -16,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 IDS_JSON_FILE = 'ids.json'
 CONFIG_JSON_FILE = 'config.json'
-MAX_LIVE_PERIOD = 86400
+MAX_LIVE_PERIOD = 86400  # 24 hours
+PAYLOAD_BYTES = 9  # <Latitude: 4 bytes><Longitude: 4 bytes><SOC: 1 byte>
 
 
 class Telegram_Backend():
@@ -38,7 +41,7 @@ class Telegram_Backend():
 
         # Template for all chat IDs
         self.id_template = {"chat_id": None, "msg_id": None,
-                       "bat_id": None, "tracker_id": None}
+                            "bat_id": None, "tracker_id": None}
 
         chat_ids = {u: self.id_template for u in self.config["users"]}
 
@@ -273,25 +276,102 @@ class Telegram_Backend():
         with open(IDS_JSON_FILE, 'w') as file:
             json.dump(self.chat_ids, file)
 
-    def handle_buffer(buf):
-        pass
+
+class MQTT_TTN():
+    def __init__(self):
+        # Telegram backend
+        self.tb = Telegram_Backend()
+
+        APPID = self.tb.config["APPID"]
+        PSW = self.tb.config["PSW"]
+
+        # MQTT Client
+        self.mqttc = mqtt.Client()
+
+        self.mqttc.on_connect = self.on_connect
+        self.mqttc.on_message = self.on_message
+
+        self.mqttc.username_pw_set(APPID, PSW)
+
+    def start(self):
+        self.mqttc.connect("eu.thethings.network", 1883, 60)
+
+        while True:
+            self.mqttc.loop()
+
+    def on_connect(self, mqttc, mosq, obj, rc):
+        logger.info('Connected with result code: {}'.format(rc))
+        if not rc == 0:
+            logger.error("ERROR: Could not connect to TTN")
+            return
+
+        # subscribe for all devices of user
+        mqttc.subscribe('+/devices/+/up')
+
+    def on_message(self, mqttc, obj, msg):
+        payload_json = json.loads(msg.payload)
+        msg_bytes = base64.b64decode(payload_json['payload_raw'])
+        dev_id = payload_json['dev_id']
+        logger.info('Received {} bytes'.format(len(msg_bytes)))
+
+        # Check length of msg
+        if not len(msg_bytes) == PAYLOAD_BYTES:
+            logger.error('Invalid payload size: {}'.format(len(msg_bytes)))
+            return
+
+        # Otherwise parse the msg
+        self.parse_payload(msg_bytes, dev_id)
+
+    def parse_payload(self, msg, dev_id):
+        # Assemble latitude
+        lat = msg[0]
+        lat = lat << 8 | msg[1]
+        lat = lat << 8 | msg[2]
+        lat = lat << 8 | msg[3]
+        lat = self.twos_comp(lat, 32)
+        lat /= 10**7
+
+        # Assemble longitude
+        lon = msg[4]
+        lon = lon << 8 | msg[5]
+        lon = lon << 8 | msg[6]
+        lon = lon << 8 | msg[7]
+        lon = self.twos_comp(lon, 32)
+        lon /= 10**7
+
+        # SOC in %
+        soc = round(msg[8]/255*100.0, 2)
+
+        for user in self.tb.chat_ids.keys():
+            if self.tb.chat_ids[user]['tracker_id'] == dev_id:
+                self.tb.send_live_location(user, lat, lon)
+                self.tb.send_soc(user, soc)
+
+    def twos_comp(self, val, bits):
+        """compute the 2's complement of int value val"""
+        if (val & (1 << (bits - 1))) != 0:
+            val = val - (1 << bits)
+        return val
 
 
 def main():
-    # Backend class object,start
-    tb = Telegram_Backend()
+    mqtt_ttn = MQTT_TTN()
 
-    # Temporary fixed location for testing
-    lat = {"0": 47.399978, "1": 40.749806}
-    lon = {"0": 8.546835, "1": -73.987806}
-    while(True):
-        for user in tb.config["users"]:
-            id_ = tb.chat_ids[user]["tracker_id"]
-            lat[id_] += 0.0001
-            lon[id_] += 0.0001
-            tb.send_live_location(user, lat[id_], lon[id_])
-            tb.send_soc(user, int(100.0*random()))
-        sleep(3)
+    while True:
+        try:
+            # Blocking call, while loop makes sure to just restart
+            mqtt_ttn.start()
+        except Exception as e:
+            logger.error('MQTT thread failed, restarting')
+
+    # Test payloads
+    # lat = {"0": 47.399978, "1": 40.749806}
+    # lon = {"0": 8.546835, "1": -73.987806}
+    # Payload 1
+    # 1C40A9A4 051824BE 64
+
+    # Payload 2
+    # 1849ED4C D3E65B54 32
 
 
 if __name__ == '__main__':
