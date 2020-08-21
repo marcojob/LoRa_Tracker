@@ -26,7 +26,7 @@ MAX_LOG_LINES = 7200
 class Telegram_Backend():
     def __init__(self):
         # Variables
-        self.config = {"token": None, "users": []}
+        self.config = {"token": None, "users": [], "APPID": None, "PSW": None}
         self.last_soc = 0
 
         # Load config
@@ -343,32 +343,29 @@ class MQTT_TTN():
         # SOC in %
         soc = round(msg[8]/255*100.0, 2)
 
-        try:
-            for user in self.tb.chat_ids.keys():
-                if self.tb.chat_ids[user]['tracker_id'] == dev_id:
-                    # Send the location
-                    self.tb.send_live_location(user, lat, lon)
-                    self.tb.send_soc(user, soc)
+        for user in self.tb.chat_ids.keys():
+            if self.tb.chat_ids[user]['tracker_id'] == dev_id:
+                # Send the location
+                self.tb.send_live_location(user, lat, lon)
+                self.tb.send_soc(user, soc)
 
-                    # Log the location
-                    lines = list()
-                    log_file = '{}.log'.format(user)
-                    if os.path.isfile(log_file):
-                        with open(log_file, 'r') as l:
-                            lines = l.readlines()
+                # Log the location
+                lines = list()
+                log_file = '{}.log'.format(user)
+                if os.path.isfile(log_file):
+                    with open(log_file, 'r') as l:
+                        lines = l.readlines()
 
-                            # Limit file length
-                            if len(lines) > MAX_LOG_LINES:
-                                del lines[0:len(lines)-MAX_LOG_LINES]
+                        # Limit file length
+                        if len(lines) > MAX_LOG_LINES:
+                            del lines[0:len(lines)-MAX_LOG_LINES]
 
-                    with open(log_file, 'w') as l:
-                        for line in lines:
-                            l.write(line)
+                with open(log_file, 'w') as l:
+                    for line in lines:
+                        l.write(line)
 
-                        l.write('{}: {}, {}, {}\n'.format(time(), lat, lon, soc))
-                        l.flush()
-        except Exception as e:
-            print(e)
+                    l.write('{}: {}, {}, {}\n'.format(time(), lat, lon, soc))
+                    l.flush()
 
     def twos_comp(self, val, bits):
         """compute the 2's complement of int value val"""

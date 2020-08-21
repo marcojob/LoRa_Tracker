@@ -1,1 +1,3 @@
 python-telegram-bot
+paho-mqtt
+python-telegram-bot
