@@ -23,9 +23,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "lmic.h"
+// #include "lmic.h"
 #include "config.h"
 #include "debug.h"
+#include "GPS.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -96,7 +97,7 @@ void initfunc (osjob_t* j) {
     LMIC_startJoining();
 }
 
-uint8_t readsensor(){
+uint8_t readsensor() {
     static uint8_t val = 0;
     val++;
     return val;
@@ -116,6 +117,9 @@ static void reportfunc (osjob_t* j) {
     os_setTimedCallback(j, os_getTime()+sec2osticks(60), reportfunc);
 }
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    GPS_CallBack();
+}
 
 //////////////////////////////////////////////////
 // LMIC EVENT CALLBACK
@@ -225,6 +229,13 @@ int main(void)
   MX_TIM4_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
+
+  debug_str("HERE!\n");
+  GPS_Init();
+  while (1) {
+    GPS_Process();
+    HAL_Delay(100);
+  }
 
   HAL_TIM_Base_Start_IT(&htim4);    // <-----------  change to your setup
   __HAL_SPI_ENABLE(&hspi1);         // <-----------  change to your setup

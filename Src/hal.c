@@ -95,7 +95,7 @@ extern void radio_irq_handler(u1_t dio);
 // generic EXTI IRQ handler for all channels
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin_int){
 	// DIO 0
-	if(GPIO_Pin_int == DIO0_Pin) {
+	/*if(GPIO_Pin_int == DIO0_Pin) {
 		// invoke radio handler (on IRQ!)
 		radio_irq_handler(0);
 	}
@@ -108,7 +108,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin_int){
 	if(GPIO_Pin_int == DIO2_Pin) {
 	    // invoke radio handler (on IRQ!)
 	    radio_irq_handler(2);
-	}
+	}*/
 }
 
 // -----------------------------------------------------------------------------
