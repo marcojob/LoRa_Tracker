@@ -10,10 +10,7 @@
 
 typedef struct
 {
-    uint8_t UTC_Hour;
-    uint8_t UTC_Min;
-    uint8_t UTC_Sec;
-    uint16_t UTC_MicroSec;
+    float UTC_Time;
 
     float Latitude;
     double LatitudeDecimal;

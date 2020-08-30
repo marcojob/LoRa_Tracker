@@ -24,7 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-// #include "lmic.h"
+#include "lmic.h"
 #include "config.h"
 #include "debug.h"
 #include "GPS.h"
@@ -128,9 +128,9 @@ static void reportfunc (osjob_t* j) {
     os_setTimedCallback(j, os_getTime()+sec2osticks(60), reportfunc);
 }
 
-/*void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     GPS_CallBack();
-}*/
+}
 
 //////////////////////////////////////////////////
 // LMIC EVENT CALLBACK
@@ -240,6 +240,14 @@ int main(void)
   MX_TIM4_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
+  debug_str("starting");
+  for (int i=0; i<3; i++) {
+    GPS_Query();
+    float lat = GPS_Get_Lat();
+    char output[50];
+    sprintf(output, "lat: %f\n", lat);
+    debug_str(output);
+  }
 
   HAL_TIM_Base_Start_IT(&htim4);    // <-----------  change to your setup
   __HAL_SPI_ENABLE(&hspi1);         // <-----------  change to your setup

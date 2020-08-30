@@ -75,11 +75,8 @@ void GPS_Process(void) {
         str=strstr((char*)GPS.rxBuffer,"$GNGGA,");
         if(str!=NULL) {
             memset(&GPS.GPGGA,0,sizeof(GPS.GPGGA));
-            sscanf(str,"$GNGGA,%2hhd%2hhd%2hhd.%3hd,%f,%c,%f,%c,%hhd,%hhd,%f,%f,%c,%hd,%s,*%2s\r\n",
-                &GPS.GPGGA.UTC_Hour,
-                &GPS.GPGGA.UTC_Min,
-                &GPS.GPGGA.UTC_Sec,
-                &GPS.GPGGA.UTC_MicroSec,
+            sscanf(str,"$GNGGA,%f,%f,%c,%f,%c,%d,%d,%f,%f,%c,%f,%c,%s,*%2s\r\n",
+                &GPS.GPGGA.UTC_Time,
                 &GPS.GPGGA.Latitude,
                 &GPS.GPGGA.NS_Indicator,
                 &GPS.GPGGA.Longitude,
@@ -89,7 +86,8 @@ void GPS_Process(void) {
                 &GPS.GPGGA.HDOP,
                 &GPS.GPGGA.MSL_Altitude,
                 &GPS.GPGGA.MSL_Units,
-                &GPS.GPGGA.AgeofDiffCorr,
+                &GPS.GPGGA.Geoid_Separation,
+                &GPS.GPGGA.Geoid_Units,
                 GPS.GPGGA.DiffRefStationID,
                 GPS.GPGGA.CheckSum);
 
@@ -104,11 +102,6 @@ void GPS_Process(void) {
 
             GPS.GPGGA.LatitudeDecimal = convertDegMinToDecDeg(GPS.GPGGA.Latitude);
             GPS.GPGGA.LongitudeDecimal = convertDegMinToDecDeg(GPS.GPGGA.Longitude);
-
-            char output[50];
-            sprintf(output, "lat %f, lon %f\n", GPS.GPGGA.LatitudeDecimal, GPS.GPGGA.LongitudeDecimal); 
-            debug_str(output);
-            debug_str(str);
         }
 
         memset(GPS.rxBuffer,0,sizeof(GPS.rxBuffer));
@@ -128,7 +121,7 @@ float GPS_Get_Lon(void) {
 void GPS_Query(void) {
     for (int i = 0; i < MAX_TRIALS; i++) {
         GPS_Process();
-        HAL_Delay(20);
+        HAL_Delay(50);
         if (GPS_Get_Lat() != 0.0 && GPS_Get_Lon() != 0.0) {
             break;
         }
