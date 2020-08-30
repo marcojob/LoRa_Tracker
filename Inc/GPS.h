@@ -2,13 +2,14 @@
 #define _GPS_H_
 
 #define _GPS_USART huart3
-#define _GPS_DEBUG 1
+#define _GPS_DEBUG 0
 
 #include <stdint.h>
 
 //##################################################################################################################
 
-typedef struct {
+typedef struct
+{
     uint8_t UTC_Hour;
     uint8_t UTC_Min;
     uint8_t UTC_Sec;
@@ -32,7 +33,7 @@ typedef struct {
     uint16_t AgeofDiffCorr;
     char DiffRefStationID[4];
     char CheckSum[2];
-
+    
 } GPGGA_t;
 
 typedef struct  {
@@ -47,9 +48,12 @@ typedef struct  {
 
 extern GPS_t GPS;
 //##################################################################################################################
-void    GPS_Init(void);
-void    GPS_CallBack(void);
-void    GPS_Process(void);
+void GPS_Init(void);
+void GPS_CallBack(void);
+void GPS_Process(void);
+void GPS_Query(void);
+float GPS_Get_Lat(void);
+float GPS_Get_Lon(void);
 //##################################################################################################################
 
 #endif

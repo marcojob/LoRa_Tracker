@@ -87,10 +87,6 @@ void os_getDevKey (u1_t* buf) {
     memcpy(buf, DEVKEY, 16);
 }
 
-void initsensor(){
-    //
-}
-
 void initfunc (osjob_t* j) {
     LMIC_reset();
 
@@ -117,9 +113,9 @@ static void reportfunc (osjob_t* j) {
     os_setTimedCallback(j, os_getTime()+sec2osticks(60), reportfunc);
 }
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+/*void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     GPS_CallBack();
-}
+}*/
 
 //////////////////////////////////////////////////
 // LMIC EVENT CALLBACK
@@ -229,13 +225,6 @@ int main(void)
   MX_TIM4_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-
-  debug_str("HERE!\n");
-  GPS_Init();
-  while (1) {
-    GPS_Process();
-    HAL_Delay(100);
-  }
 
   HAL_TIM_Base_Start_IT(&htim4);    // <-----------  change to your setup
   __HAL_SPI_ENABLE(&hspi1);         // <-----------  change to your setup
