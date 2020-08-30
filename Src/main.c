@@ -20,6 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <math.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -93,10 +94,26 @@ void initfunc (osjob_t* j) {
     LMIC_startJoining();
 }
 
-uint8_t readsensor() {
-    static uint8_t val = 0;
-    val++;
-    return val;
+void prepare_payload() {
+    GPS_Query();
+
+    float lat_f = GPS_Get_Lat();
+    float lon_f = GPS_Get_Lon();
+
+    int32_t lat_i = (uint32_t)(lat_f*pow(10, 7));
+    int32_t lon_i = (uint32_t)(lon_f*pow(10, 7));
+
+    LMIC.frame[3] = lat_i & 0xFF;
+    LMIC.frame[2] = (lat_i >> 8) & 0xFF;
+    LMIC.frame[1] = (lat_i >> 16) & 0xFF;
+    LMIC.frame[0] = (lat_i >> 24) & 0xFF;
+
+    LMIC.frame[7] = lon_i & 0xFF;
+    LMIC.frame[6] = (lon_i >> 8) & 0xFF;
+    LMIC.frame[5] = (lon_i >> 16) & 0xFF;
+    LMIC.frame[4] = (lon_i >> 24) & 0xFF;
+
+    LMIC.frame[8] = 255; // Todo
 }
 
 static osjob_t reportjob;
@@ -104,11 +121,9 @@ static osjob_t reportjob;
 // report sensor value every minute
 static void reportfunc (osjob_t* j) {
     // read sensor
-    uint8_t val = readsensor();
-    debug_val("val = ", val);
+    prepare_payload();
     // prepare and schedule data for transmission
-    LMIC.frame[0] = val;
-    LMIC_setTxData2(1, LMIC.frame, 1, 0); // (port 1, 1 bytes, unconfirmed)
+    LMIC_setTxData2(1, LMIC.frame, 9, 0); // (port 1, 1 bytes, unconfirmed)
     // reschedule job in 60 seconds
     os_setTimedCallback(j, os_getTime()+sec2osticks(60), reportfunc);
 }
