@@ -16,11 +16,11 @@ This device aims to be a GPS tracker which connects over LoRa to the [Things Net
 - Ported IBM LMIC to STM32F103
 
 ## TODO and next steps
-- Backend
-- Implement GPS drivers
 - Implement persistent memory writing for TTN keys
 - Add Gerber files to repository
 - Add STL files to repository
 
 ## Known issues
-- ADC pin for battery voltage measurements wired wrong
+- ADC pin for battery voltage measurements wired wrongly (fixed next PCB iteration)
+- SAM M8Q footprint very hard to solder (fixed next PCB iteration)
+- Charger thermal management not adequate (fix to be evaluated)
