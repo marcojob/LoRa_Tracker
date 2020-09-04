@@ -103,6 +103,17 @@ void prepare_payload() {
     int32_t lat_i = (uint32_t)(lat_f*pow(10, 7));
     int32_t lon_i = (uint32_t)(lon_f*pow(10, 7));
 
+    static const float SOC_CONV = (3.3*3.2*255.0) / (4095*2.2*4.2);
+    static uint16_t adc_val = 0;
+
+    HAL_ADC_Start(&hadc1);
+    if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK) {
+        adc_val = HAL_ADC_GetValue(&hadc1);
+    }
+    HAL_ADC_Stop(&hadc1);
+
+    uint8_t soc = (uint8_t)(adc_val * SOC_CONV);
+
     LMIC.frame[3] = lat_i & 0xFF;
     LMIC.frame[2] = (lat_i >> 8) & 0xFF;
     LMIC.frame[1] = (lat_i >> 16) & 0xFF;
@@ -113,7 +124,7 @@ void prepare_payload() {
     LMIC.frame[5] = (lon_i >> 16) & 0xFF;
     LMIC.frame[4] = (lon_i >> 24) & 0xFF;
 
-    LMIC.frame[8] = 255; // Todo
+    LMIC.frame[8] = soc; // Todo
 }
 
 static osjob_t reportjob;
@@ -238,14 +249,7 @@ int main(void)
   MX_TIM4_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-  debug_str("starting");
-  for (int i=0; i<3; i++) {
-    GPS_Query();
-    float lat = GPS_Get_Lat();
-    char output[50];
-    sprintf(output, "lat: %f\n", lat);
-    debug_str(output);
-  }
+  debug_str("==============STARTING==============\n");
 
   HAL_TIM_Base_Start_IT(&htim4);    // <-----------  change to your setup
   __HAL_SPI_ENABLE(&hspi1);         // <-----------  change to your setup
