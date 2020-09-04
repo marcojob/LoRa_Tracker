@@ -197,9 +197,7 @@ void onEvent (ev_t ev) {
             debug_str("EV_LINK_ALIVE\r\n");
             break;
         default:
-            debug_str("Unknown event: ");
-            debug_str((char)ev);
-            debug_str("\r\n");
+            debug_str("Unknown event\r\n");
             break;
     }
 }
