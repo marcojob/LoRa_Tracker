@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>connect by marco job</title>
+        <link
+            rel="stylesheet" 
+            href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+            integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+            crossorigin=""
+        />
+        <script
+            src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
+            integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
+            crossorigin=""
+        ></script>
+        <script
+            src="https://unpkg.com/mqtt@3.0.0/dist/mqtt.js"
+            integrity="sha384-19lCOsza6T/MWPawdJ4A5E6vrPZQibpoHXExaTq02fiHUGD8uLtprdb+DXR6GU3h"crossorigin=""
+        ></script>
+        <style>
+            #map {
+                height: 480px;
+            }
+            h1 {
+                font-family: "Helvetica Neue";
+                font-size: 24px;
+                font-style: normal;
+                font-variant: normal;
+                font-weight: 700;
+                line-height: 26.4px;
+                } 
+            h3 {
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-size: 14px;
+                font-style: normal;
+                font-variant: normal;
+                font-weight: 700;
+                line-height: 15.4px;
+            }
+            p {
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-size: 14px; font-style: normal;
+                font-variant: normal;
+                font-weight: 400;
+                line-height: 20px;
+            }
+            blockquote {
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-size: 21px;
+                font-style: normal;
+                font-variant: normal;
+                font-weight: 400;
+                line-height: 30px;
+            }
+            pre {
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-size: 13px;
+                font-style: normal;
+                font-variant: normal;
+                font-weight: 400;
+                line-height: 18.5714px;
+            }
+        </style>
+
+    </head>
+    <body>
+        <h1>connect: locations</h1>
+        <div id="map"></div>
+        <h3><b>SOC [%]: </b><t id="soc_percentage"></t></h3>
+        <h3><b>Last update: </b><t id="last_time"></t></h3>
+        <!-- <script src="{{ url_for('static', filename='main.js') }}"></script> -->
+        <script>
+// Initializing map
+const house_lat = 47.404714
+const house_lon = 8.554895
+const zoom_initial = 11
+const map = L.map('map').setView([house_lat, house_lon], zoom_initial);
+const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+// Adding openstreet map to map
+const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const tiles = L.tileLayer(tileUrl, { attribution });
+tiles.addTo(map);
+
+// Create house icon
+const house_zoom = 2.0;
+const house_icon = L.icon({
+    iconUrl: 'static/house.png',
+    iconSize: [house_zoom*zoom_initial, house_zoom*zoom_initial],
+    iconAnchor: [house_zoom*zoom_initial/2.0, house_zoom*zoom_initial]
+});
+// Add house icon to map
+let house_marker = L.marker([house_lat, house_lon], { icon: house_icon }).addTo(map);
+
+// Create station icon
+const station_zoom = 2.5;
+const station_icon = L.icon({
+    iconUrl: 'static/station.png',
+    iconSize: [station_zoom*zoom_initial, station_zoom*zoom_initial],
+    iconAnchor: [station_zoom*zoom_initial/2.0, station_zoom*zoom_initial]
+});
+
+// Create position icon
+const position_zoom = 0.6;
+const position_icon = L.icon({
+    iconUrl: 'static/position.png',
+    iconSize: [position_zoom*zoom_initial, position_zoom*zoom_initial],
+    iconAnchor: [position_zoom*zoom_initial/2.0, position_zoom*zoom_initial]
+});
+
+refresh_map();
+
+setInterval(function(){ refresh_map() }, 3000);
+
+// FUNCTIONS - TODO: MAYBE RELOCATE
+
+// On zoom resize icon
+map.on('zoomend', function() {
+    const zoom = map.getZoom() + 1;
+    resize_icon(house_icon, zoom, 2);
+    resize_icon(station_icon, zoom, 2.5);
+    resize_icon(position_icon, zoom, 0.6)
+});
+
+
+function resize_icon(icon, zoom, scale) {
+    icon.options.iconSize = [scale*zoom, scale*zoom];
+    icon.options.iconAnchor = [zoom, zoom];
+}
+
+function refresh_map() {
+    let data_json = JSON.parse('{{ data_json | tojson | safe}}');
+    /* Stations: Remove all station markers that are not in the list anymore
+     * and add the ones that are new.
+     */
+    if (!data_json.stations.isEmpty) {
+        // Loop over all stations markers and check if they are in the list
+        const N_stations = data_json.stations.length;
+        new_stations_bool = new Array(N_stations).fill(1);
+        map.eachLayer(function (layer) {
+            if (layer instanceof L.Marker && layer.options.title == 'station') {
+                lat_stat_map = layer._latlng.lat;
+                lng_stat_map = layer._latlng.lng;
+                let found = false;
+                for (let i = 0; i < N_stations; i++) {
+                    if (data_json.stations[i].latitude == lat_stat_map
+                        && data_json.stations[i].longitude == lng_stat_map) {
+                        found = true;
+                        new_stations_bool[i] = 0;
+                    }
+                }
+                if (!found) {
+                    map.removeLayer(layer);
+                }
+            }
+        });
+        // Add new stations that have not been seen yet.
+        for (let i = 0; i < N_stations; i++) {
+            if (new_stations_bool[i]) {
+                let lat = data_json.stations[i].latitude;
+                let lng = data_json.stations[i].longitude;
+                L.marker([lat, lng], { icon: station_icon, title: 'station' }).addTo(map);
+            }
+        }
+    }
+    if (!data_json.positions.isEmpty) {
+        const N_positions = data_json.positions.length;
+        new_positions_bool = new Array(N_positions).fill(1);
+        map.eachLayer(function (layer) {
+            if (layer instanceof L.Marker && layer.options.title == 'position') {
+                lat_pos_map = layer._latlng.lat;
+                lng_pos_map = layer._latlng.lng;
+                let found = false;
+                for (let i = 0; i < N_positions; i++) {
+                    if (data_json.positions[i].latitude == lat_pos_map
+                        && data_json.positions[i].longitude == lng_pos_map) {
+                        found = true;
+                        new_positions_bool[i] = 0;
+                    }
+                }
+                if (!found) {
+                    map.removeLayer(layer);
+                }
+            }
+        });
+        // Add new positions that have not been seen yet.
+        for (let i = 0; i < N_positions; i++) {
+            if (new_positions_bool[i]) {
+                let lat = data_json.positions[i].latitude;
+                let lng = data_json.positions[i].longitude;
+                L.marker([lat, lng], { icon: position_icon, title: 'position' }).addTo(map);
+            }
+        }
+    }
+    let soc_percentage = data_json.soc/16*100;
+    document.getElementById("soc_percentage").innerHTML = soc_percentage;
+    let last_time = data_json.time;
+    document.getElementById("last_time").innerHTML = last_time;
+}
+    </script>
+    </body>
+</html>

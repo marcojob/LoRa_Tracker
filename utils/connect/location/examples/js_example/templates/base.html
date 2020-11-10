@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>connect by marco job</title>
+        <link
+            rel="stylesheet" 
+            href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+            integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+            crossorigin=""
+        />
+        <script
+            src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
+            integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
+            crossorigin=""
+        ></script>
+        <script
+            src="https://unpkg.com/mqtt@3.0.0/dist/mqtt.js"
+            integrity="sha384-19lCOsza6T/MWPawdJ4A5E6vrPZQibpoHXExaTq02fiHUGD8uLtprdb+DXR6GU3h"crossorigin=""
+        ></script>
+        <style>
+            #map {
+                height: 480px;
+            }
+            h1 {
+                font-family: "Helvetica Neue";
+                font-size: 24px;
+                font-style: normal;
+                font-variant: normal;
+                font-weight: 700;
+                line-height: 26.4px;
+                } 
+            h3 {
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-size: 14px;
+                font-style: normal;
+                font-variant: normal;
+                font-weight: 700;
+                line-height: 15.4px;
+            }
+            p {
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-size: 14px; font-style: normal;
+                font-variant: normal;
+                font-weight: 400;
+                line-height: 20px;
+            }
+            blockquote {
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-size: 21px;
+                font-style: normal;
+                font-variant: normal;
+                font-weight: 400;
+                line-height: 30px;
+            }
+            pre {
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-size: 13px;
+                font-style: normal;
+                font-variant: normal;
+                font-weight: 400;
+                line-height: 18.5714px;
+            }
+        </style>
+
+    </head>
+    <body>
+        <h1>connect: locations</h1>
+        <div id="map"></div>
+        <!-- <script src="{{ url_for('static', filename='main.js') }}"></script> -->
+        <script>
+// Initializing map
+const house_lat = 47.404714
+const house_lon = 8.554895
+const zoom_initial = 11
+const map = L.map('map').setView([house_lat, house_lon], zoom_initial);
+const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+// Adding openstreet map to map
+const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const tiles = L.tileLayer(tileUrl, { attribution });
+tiles.addTo(map);
+
+// Add house icon to map
+const house_icon = L.icon({
+    iconUrl: 'static/house.png',
+    iconSize: [2*zoom_initial, 2*zoom_initial],
+    iconAnchor: [zoom_initial, zoom_initial]
+});
+let house_marker = L.marker([house_lat, house_lon], { icon: house_icon }).addTo(map);
+
+// Create station icon
+const station_icon = L.icon({
+    iconUrl: 'static/station.png',
+    iconSize: [2.5*zoom_initial, 2.5*zoom_initial],
+    iconAnchor: [zoom_initial, zoom_initial]
+});
+
+// FUNCTIONS - TODO: MAYBE RELOCATE
+
+// On zoom resize icon
+map.on('zoomend', function() {
+    const zoom = map.getZoom() + 1;
+    resize_icon(house_icon, zoom, 2);
+    resize_icon(station_icon, zoom, 2.5);
+});
+
+
+function resize_icon(icon, zoom, scale) {
+    icon.options.iconSize = [scale*zoom, scale*zoom];
+    icon.options.iconAnchor = [zoom, zoom];
+}
+
+function append_station(lat, lon) {
+    let station_temp = L.marker([lat, lon], { icon: station_icon }).addTo(map);
+    stations.push(station_temp);
+}
+        </script>
+    </body>
+</html>
