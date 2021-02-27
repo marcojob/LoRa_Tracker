@@ -100,8 +100,8 @@ void prepare_payload() {
     float lat_f = GPS_Get_Lat();
     float lon_f = GPS_Get_Lon();
 
-    int32_t lat_i = (uint32_t)(lat_f*pow(10, 7));
-    int32_t lon_i = (uint32_t)(lon_f*pow(10, 7));
+    int32_t lat_i = (int32_t)(lat_f*pow(10, 7));
+    int32_t lon_i = (int32_t)(lon_f*pow(10, 7));
 
     static const float SOC_CONV = (3.3*3.2*255.0) / (4095*2.2*4.2);
     static uint16_t adc_val = 0;
